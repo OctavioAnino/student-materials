@@ -26,7 +26,7 @@ namespace ufl_cap4053 { namespace fundamentals {
                         return currentNode_ != rhs.currentNode_;
                     }
             };
-            LinkedList<typename T>() {
+            LinkedList<T>() {
                 head_ = nullptr;
                 tail_ = nullptr;
             };
@@ -105,12 +105,12 @@ namespace ufl_cap4053 { namespace fundamentals {
             }
 
             void clear() {
-                while (head_!=tail_) {
-                    Node* to_delete = tail_;
-                    tail_ = tail_->prev_;
+                Node *curr = head_;
+                while (curr) {
+                    Node *to_delete = curr;
+                    curr = curr->next_;
                     delete to_delete;
                 }
-                delete head_;
                 head_ = nullptr;
                 tail_ = nullptr;
             }
