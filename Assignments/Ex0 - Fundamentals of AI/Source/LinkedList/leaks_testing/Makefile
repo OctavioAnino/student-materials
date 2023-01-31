@@ -8,3 +8,6 @@ tests.o: main.cpp
 
 clean:
 	rm tests main.o
+
+memcheck:
+	valgrind --leak-check=yes ./tests
