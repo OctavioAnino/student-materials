@@ -1,3 +1,8 @@
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#include <iostream>
+
 #include "../Data Structures/LinkedList.h"
 
 #include <limits>
@@ -215,6 +220,9 @@ int main()
 
     cout << "Press ENTER to continue..." << endl;
     while(cin.get() != '\n') {;}
+
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+    _CrtDumpMemoryLeaks();
     return 0;
 }
 

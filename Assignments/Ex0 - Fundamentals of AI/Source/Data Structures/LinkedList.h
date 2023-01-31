@@ -144,6 +144,11 @@ namespace ufl_cap4053 { namespace fundamentals {
                     curr = curr->next_;
                 }
             }
+
+            ~LinkedList<T>() {
+                if (!isEmpty()) clear();
+            }
+
         private:
             struct Node {
                 T element_;
