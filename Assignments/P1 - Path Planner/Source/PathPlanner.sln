@@ -9,8 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TileSystem", "Framework\Til
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PathSearch", "PathSearch\PathSearch.vcxproj", "{D06C10F4-4206-49AF-AF0B-39E9CABF720E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QueueTest", "QueueTest\QueueTest.vcxproj", "{3B623B88-DF52-48AF-B843-5F788DDEF669}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PathPlannerCLI", "Framework\PathPlannerCLI\PathPlannerCLI.vcxproj", "{DBB2E8D8-CE14-471F-A7CE-789E93E2B182}"
 EndProject
 Global
