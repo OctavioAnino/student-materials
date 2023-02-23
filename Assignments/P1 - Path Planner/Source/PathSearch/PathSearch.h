@@ -9,8 +9,18 @@ namespace ufl_cap4053
 		class PathSearch
 		{
 			// CLASS DECLARATION GOES HERE
-		private:
-			std::vector<Tile const*> tiles_;
+			Tile** tiles_;
+			int* connections_;
+
+			int mapCols_;
+			int mapRows_;
+
+			int startRow_, startCol_;
+			int goalRow_, goalCol_;
+
+			struct Private;
+
+
 		public:
 			DLLEXPORT PathSearch(); // EX: DLLEXPORT required for public methods - see platform.h
 
