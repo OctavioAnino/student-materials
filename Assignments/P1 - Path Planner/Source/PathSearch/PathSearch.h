@@ -9,16 +9,42 @@ namespace ufl_cap4053
 		class PathSearch
 		{
 			// CLASS DECLARATION GOES HERE
-			Tile** tiles_;
-			int* connections_;
-
+			Tile** tiles_ = nullptr;
+			int* connections_ = nullptr;
+			
 			int mapCols_;
 			int mapRows_;
 
 			int startRow_, startCol_;
 			int goalRow_, goalCol_;
 
+			double tileRadius_;
+			unsigned int weightSumSquare_;
+			double expectedTileWeight_;
+
+			bool found_ = false;
+			//bool searchPaused_ = false;
+
 			struct Private;
+			struct SearchState;
+			struct Node;
+
+			struct SearchState* currentSearch_ = nullptr;
+
+			int get1DPos(int row, int col)
+			{
+				return row * mapCols_ + col;
+			}
+
+			static double lineDistance(int x1, int x2, int y1, int y2) {
+				return std::sqrt(std::pow(x2 - x1, 2) + pow(y2 - y1, 2));
+			}
+
+			static int hexDistance(int x1, int x2, int y1, int y2) {
+				return std::round(std::sqrt(std::pow((x2 - x1), 2) + pow(y2 - y1, 2)));
+			}
+
+			static double estimatePathCost(double givenCost, double estimatedDistanceToGoal);
 
 
 		public:
