@@ -25,19 +25,20 @@ namespace ufl_cap4053
 			bool found_ = false;
 			//bool searchPaused_ = false;
 
-			struct Private;
 			struct SearchState;
 			struct Node;
 
 			struct SearchState* currentSearch_ = nullptr;
+
 
 			int get1DPos(int row, int col)
 			{
 				return row * mapCols_ + col;
 			}
 
-			static double lineDistance(int x1, int x2, int y1, int y2) {
-				return std::sqrt(std::pow(x2 - x1, 2) + pow(y2 - y1, 2));
+			bool mapBoundsCheck(int row_pos, int col_pos) {
+				return row_pos < 0 || row_pos >= mapRows_
+					|| col_pos < 0 || col_pos >= mapCols_;
 			}
 
 			static int hexDistance(int x1, int x2, int y1, int y2) {
@@ -45,6 +46,17 @@ namespace ufl_cap4053
 			}
 
 			static double estimatePathCost(double givenCost, double estimatedDistanceToGoal);
+
+			static void loopUpdateCol(int node_row, int* col) {
+				if (node_row % 2 == 0)
+					(*col)++;
+				else
+					(*col)--;
+			}
+
+			static bool loopBoundsCheck(int node_row, int col) {
+				return (node_row % 2 == 0 && col < 2) || (node_row % 2 == 1 && col > -2);
+			}
 
 
 		public:

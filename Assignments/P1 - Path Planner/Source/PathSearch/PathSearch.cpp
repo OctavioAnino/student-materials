@@ -16,73 +16,6 @@ namespace ufl_cap4053
 {
 	namespace searches
 	{
-		// CLASS DEFINITION GOES HERE
-		struct PathSearch::Private {
-
-			static int** getNeighbors(PathSearch& self, int* node) {
-				int** neighbors = new int* [7] {nullptr};
-				int* neighbor_count = new int[1];
-				neighbor_count[0] = 0;
-				neighbors[0] = neighbor_count;
-
-				bool even_row = node[0] % 2 == 0;
-				int col_start = even_row ? -1 : 1;
-
-				for (int n_col = col_start;
-					loopBoundsCheck(node[0], n_col);
-					loopUpdateCol(node[0], &n_col))
-				{
-					for (int n_row = -1; n_row < 2; n_row++) {
-						bool col_check = even_row ? n_col > 0: n_col < 0;
-						if ((n_col == 0 && n_row == 0)
-							|| (col_check && n_row != 0))
-							continue;
-
-						int row_pos = node[0] + n_row;
-						int col_pos = node[1] + n_col;
-						if (mapBoundsCheck(self, row_pos, col_pos)) continue;
-
-						int neigh_pos = (row_pos) * (self.mapCols_) + (col_pos);
-						Tile* neighbor_tile = self.tiles_[neigh_pos];
-						if (neighbor_tile->getWeight() != 0)
-							addTileToNeighbors(neighbor_tile, neighbor_count, neighbors);
-					}
-				}
-
-				return neighbors;
-			}
-
-			static bool mapBoundsCheck(PathSearch& self, int row_pos, int col_pos) {
-				return row_pos < 0 || row_pos >= self.mapRows_
-					|| col_pos < 0 || col_pos >= self.mapCols_;
-			}
-
-			static void loopUpdateCol(int node_row, int* col) {
-				if (node_row % 2 == 0)
-					(*col)++;
-				else
-					(*col)--;
-			}
-
-			static bool loopBoundsCheck(int node_row, int col) {
-				if (node_row % 2 == 0 && col < 2 || node_row % 2 == 1 && col > -2)
-					return true;
-				return false;
-			}
-
-			static void addTileToNeighbors(Tile* neighbor_tile,
-				int* neighbor_count,
-				int** neighbors)
-			{
-				neighbor_count[0] = neighbor_count[0] + 1;
-				int* valid_neighbor = new int[2];
-				valid_neighbor[0] = neighbor_tile->getRow();
-				valid_neighbor[1] = neighbor_tile->getColumn();
-				neighbors[neighbor_count[0]] = valid_neighbor;
-			}
-
-		};
-
 		struct PathSearch::Node {
 			int* coordinates_;
 			double estimatedDistanceToGoal_;
@@ -131,7 +64,7 @@ namespace ufl_cap4053
 				seen_ = new std::unordered_map<int, struct Node*>();
 				visited_ = new std::unordered_map<int, struct Node*>();
 
-				toVisit_ = new PriorityQueue<struct Node*>(&greedyCompare); 
+				toVisit_ = new PriorityQueue<struct Node*>(&greedyCompare);
 
 			}
 
@@ -176,30 +109,16 @@ namespace ufl_cap4053
 
 			}
 
-
-			void updateToVisitQ() {
-				PriorityQueue<struct Node*>* n_toVisit_ = new PriorityQueue<struct Node*>(&greedyCompare);
-				while (!toVisit_->empty())
-				{
-					n_toVisit_->push(toVisit_->front());
-					toVisit_->pop();
-				}
-				delete toVisit_;
-				toVisit_ = n_toVisit_;
-			}
-
-			static bool greedyCompare(struct Node * const& lhs, struct Node * const& rhs) // TO-DO
+			static bool greedyCompare(struct Node* const& lhs, struct Node* const& rhs) // TO-DO
 			{
 				return lhs->pathCost_ > rhs->pathCost_;
 			}
 		};
 
-	
-
 		PathSearch::PathSearch() {};
 
 		PathSearch::~PathSearch() {
-
+			//unload();
 		};
 
 		void PathSearch::load(TileMap* _tileMap) {
@@ -242,7 +161,7 @@ namespace ufl_cap4053
 
 			//int heuristic_cost = (int)std::floor(std::sqrt(std::pow(goalCol-startCol,2)+pow(goalRow-startRow,2)));
 			startNode->estimatedDistanceToGoal_ = (hexDistance(startRow, goalRow, startCol, goalCol)) * tileRadius_ * expectedTileWeight_;
-			startNode->pathCost_ = estimatePathCost(0,startNode->estimatedDistanceToGoal_); 
+			startNode->pathCost_ = estimatePathCost(0, startNode->estimatedDistanceToGoal_);
 			startNode->tile_ = tiles_[get1DPos(startRow, startCol)];
 
 			currentSearch_->toVisit_->push(startNode);
@@ -250,156 +169,132 @@ namespace ufl_cap4053
 
 		}
 
-		/*
-		* **
-		* Called to allow the path planner to execute for the specified timeslice (in milliseconds).
-		Within this method the search should be performed until the time expires or the solution is
-		found. If timeslice is zero (0), this method should only do a single iteration of the
-		algorithm. Otherwise the update should only iterate for the indicated number of milliseconds.
-		This method is always preceded by at least one call to initialize().
-		  **
-
-		basically just do bfs for now...
-
-		*/
 
 		void PathSearch::update(long timeslice) {
 			std::chrono::time_point start = std::chrono::steady_clock::now();
-			bool searchInterrupted = false;
 
 			struct Node* currentNode;
 
-
+			PriorityQueue<struct Node*>* toVisit = currentSearch_->toVisit_;
+			std::unordered_map<int, struct Node*>* seen = currentSearch_->seen_;
+			std::unordered_map<int, struct Node*>* visited = currentSearch_->visited_;
 
 			bool found = false;
 
-			while (!(currentSearch_->toVisit_)->empty() && !found)
+			while (!toVisit->empty() && !found)
 			{
-				currentNode = (currentSearch_->toVisit_)->front();
-				(currentSearch_->toVisit_)->pop();
+				currentNode = toVisit->front();
+				toVisit->pop();
 
 				int* currentNodePos = currentNode->coordinates_;
+				int currentNodeScalarPos = currentNodePos[0] * mapCols_ + currentNodePos[1];
 
-				int** neighbors = Private::getNeighbors(*this, currentNodePos);
+				bool even_row = currentNodePos[0] % 2 == 0;
+				int col_start = even_row ? -1 : 1;
 
-				for (int neighbor_pos = 1; neighbor_pos <= neighbors[0][0]; neighbor_pos++)
+				for (int n_col = col_start;
+					loopBoundsCheck(currentNodePos[0], n_col);
+					loopUpdateCol(currentNodePos[0], &n_col))
 				{
-					int* neighbor = neighbors[neighbor_pos];
-					int neighborTilesPos = get1DPos(neighbor[0], neighbor[1]);
+					for (int n_row = -1; n_row < 2; n_row++) {
+						// check for "incomplete" column
+						bool col_check = even_row ? n_col > 0: n_col < 0;
+						// check for self as well...
+						if ((n_col == 0 && n_row == 0)
+							|| (col_check && n_row != 0))
+							continue;
 
-					bool neigh_visited = (currentSearch_->visited_)->find(neighborTilesPos)
-						!= (currentSearch_->visited_)->end();
+						int row_pos = currentNodePos[0] + n_row;
+						int col_pos = currentNodePos[1] + n_col;
+						if (mapBoundsCheck(row_pos, col_pos)) continue;
 
-					bool neigh_seen = (currentSearch_->seen_)->find(neighborTilesPos)
-						!= (currentSearch_->seen_)->end();
-
-					Tile* n_neighbor_tile = tiles_[neighborTilesPos];
-
-					if (!neigh_visited && !neigh_seen)
-					{ // if neighbor hasnt been seen before
-
-						// create a node for neighbor
-						struct Node* n_neighbor = new Node(neighbor[0], neighbor[1]);
-
-						// calculate given cost to node
-						n_neighbor->givenCost_ = currentNode->givenCost_ + currentNode->tile_->getWeight() * tileRadius_;
-						n_neighbor->estimatedDistanceToGoal_ = hexDistance(currentNode->coordinates_[0], goalRow_,
-							currentNode->coordinates_[1], goalCol_) * tileRadius_ * expectedTileWeight_;
-						n_neighbor->generatePathCost(&estimatePathCost);
-						n_neighbor->tile_ = tiles_[get1DPos(neighbor[0], neighbor[1])];
-
-						// push neighbor onto q
-						(currentSearch_->toVisit_)->push(n_neighbor);
-
-						// set neighbor tile as seen
-						(*currentSearch_->seen_)[neighborTilesPos] = n_neighbor;
-						tiles_[neighborTilesPos]->setFill(0xFF8080EE);
-
-						// !! remove reference to neighbor from neighbors since it now belongs to a node
-						neighbors[neighbor_pos] = nullptr;
-
-						// mark the path to this tile
-						connections_[neighborTilesPos] = get1DPos(currentNodePos[0], currentNodePos[1]);
-
-						if (neighbor[0] == goalRow_ && neighbor[1] == goalCol_)
+						int neighborTilesPos = (row_pos) * (mapCols_) + (col_pos);
+						Tile* n_neighbor_tile = tiles_[neighborTilesPos];
+						if (n_neighbor_tile->getWeight() != 0)
 						{
-							found = true;
-							//connections_[neighborTilesPos] = currentNodeTilesPos;
-							break;
-						}
-					}
-					else { // if the neighbor has been seen or visited
-						// retrieve node information
-						struct Node* neigh_node = neigh_visited ? (currentSearch_->visited_)->at(neighborTilesPos)
-							: (currentSearch_->seen_)->at(neighborTilesPos);
+							bool neigh_visited = visited->find(neighborTilesPos) != visited->end();
 
-						// calculate new given cost
-						int n_given_cost = currentNode->givenCost_ + currentNode->tile_->getWeight() * tileRadius_;
+							bool neigh_seen = seen->find(neighborTilesPos) != seen->end();
 
-						// if the new given cost is smaller than what it used to be
-						if (n_given_cost < neigh_node->givenCost_) {
-							// update the estimated cost and estimate cost for this node
-							neigh_node->givenCost_ = n_given_cost;
-							neigh_node->generatePathCost(&estimatePathCost);
+							if (!neigh_visited && !neigh_seen)
+							{ // if neighbor hasnt been seen before
 
-							if (neigh_visited) // if the neighbor had already been visited, we must remove it from visited
-							{ // and place it in toVisit_ again. Also, add to seen.
-								(currentSearch_->visited_)->erase((currentSearch_->visited_)->find(neighborTilesPos));
-								(currentSearch_->toVisit_)->push(neigh_node);
-								(*currentSearch_->seen_)[neighborTilesPos] = neigh_node;
+								// create a node for neighbor
+								struct Node* n_neighbor = new Node(row_pos, col_pos);
+
+								// calculate given cost to node
+								n_neighbor->givenCost_ = currentNode->givenCost_ + currentNode->tile_->getWeight() * tileRadius_;
+								n_neighbor->estimatedDistanceToGoal_ = hexDistance(currentNodePos[0], goalRow_,
+									currentNodePos[1], goalCol_) * tileRadius_ * expectedTileWeight_;
+								n_neighbor->pathCost_ = estimatePathCost(n_neighbor->givenCost_, n_neighbor->estimatedDistanceToGoal_);
+								n_neighbor->tile_ = n_neighbor_tile;
+
+								// push neighbor onto q
+								toVisit->push(n_neighbor);
+
+								// set neighbor tile as seen
+								(*seen)[neighborTilesPos] = n_neighbor;
+								tiles_[neighborTilesPos]->setFill(0xFF8080EE);
+
+								// mark the path to this tile
+								connections_[neighborTilesPos] = get1DPos(currentNodePos[0], currentNodePos[1]);
+
+								if (row_pos == goalRow_ && col_pos == goalCol_)
+								{
+									found = true;
+									//connections_[neighborTilesPos] = currentNodeTilesPos;
+									break;
+								}
 							}
-							else
-							{  // remove node an re insert to be placed in right position
-								currentSearch_->toVisit_->remove(neigh_node);
-								currentSearch_->toVisit_->push(neigh_node);
-							}
+							else { // if the neighbor has been seen or visited
+								// retrieve node information
+								struct Node* neigh_node = neigh_visited ? visited->at(neighborTilesPos) : seen->at(neighborTilesPos);
 
-							// update the path to this neighbor
-							connections_[neighborTilesPos] = get1DPos(currentNodePos[0], currentNodePos[1]);
+								// calculate new given cost
+								int n_given_cost = currentNode->givenCost_ + currentNode->tile_->getWeight() * tileRadius_;
+
+								// if the new given cost is smaller than what it used to be
+								if (n_given_cost < neigh_node->givenCost_) {
+									// update the estimated cost and estimate cost for this node
+									neigh_node->givenCost_ = n_given_cost;
+									neigh_node->pathCost_ = estimatePathCost(neigh_node->givenCost_, neigh_node->estimatedDistanceToGoal_);
+
+									if (neigh_visited) // if the neighbor had already been visited, we must remove it from visited
+									{ // and place it in toVisit_ again. Also, add to seen.
+										visited->erase(visited->find(neighborTilesPos));
+										(*seen)[neighborTilesPos] = neigh_node;
+									}
+									else
+									{  // remove node an re insert to be placed in right position
+										toVisit->remove(neigh_node);
+									}
+									toVisit->push(neigh_node);
+									// update the path to this neighbor
+									connections_[neighborTilesPos] = get1DPos(currentNodePos[0], currentNodePos[1]);
+								}
+							}
 						}
 					}
 				}
-
-
-				//clean neighbors[][]
-				for (int i = 0; i < 7; i++)
-				{
-					if (neighbors[i] != nullptr)
-						delete[] neighbors[i];
-				}
-				if (neighbors != nullptr) delete[] neighbors;
-				neighbors = nullptr;
 
 				// remove node from seen and place into visited
-				(currentSearch_->seen_)->erase(
-					(currentSearch_->seen_)->find(
-						currentNodePos[0] * mapCols_ + currentNodePos[1]));
-
-				(*currentSearch_->visited_)[(currentNodePos[0] * mapCols_ + currentNodePos[1])] = currentNode;
-				tiles_[currentNodePos[0] * mapCols_ + currentNodePos[1]]->setFill(0xFF1020FF);
-				//currentSearch_->setLastVisitedNode(currentNodePos[0], currentNodePos[1]);
-
-				//if (currentNodePos != nullptr) delete[] currentNodePos;
-				//currentNodePos = nullptr;
+				seen->erase(seen->find(currentNodeScalarPos));
+				(*visited)[(currentNodeScalarPos)] = currentNode;
+				// update visual
+				tiles_[currentNodeScalarPos]->setFill(0xFF1020FF);
 
 				if (std::chrono::steady_clock::now() - start
 				> std::chrono::milliseconds(timeslice))
-				{
-					//searchPaused_ = true;
-					searchInterrupted = true;
 					break;
-				}
 			}
 
-
-			if (found) {
+			if (found) 
 				found_ = true;
-			}
 
 		}
 
 		double PathSearch::estimatePathCost(double const givenCost, double const estimatedDistanceToGoal) {
-			return givenCost*0.55 + estimatedDistanceToGoal*0.45;
+			return givenCost * 0.55 + estimatedDistanceToGoal * 0.45;
 		}
 
 
@@ -409,11 +304,9 @@ namespace ufl_cap4053
 			if (currentSearch_ != nullptr)
 				delete currentSearch_;
 			currentSearch_ = nullptr;
-
 		}
 
 		void PathSearch::unload() {
-			shutdown();
 			if (tiles_ != nullptr) delete[] tiles_;
 		}
 
