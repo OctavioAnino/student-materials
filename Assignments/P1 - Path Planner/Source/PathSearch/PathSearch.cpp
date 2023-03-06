@@ -171,7 +171,7 @@ namespace ufl_cap4053
 
 
 		void PathSearch::update(long timeslice) {
-			std::chrono::time_point start = std::chrono::steady_clock::now();
+			std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<float>> start = std::chrono::steady_clock::now();
 
 			struct Node* currentNode;
 
