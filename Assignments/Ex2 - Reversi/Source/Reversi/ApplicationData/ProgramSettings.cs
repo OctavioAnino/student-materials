@@ -56,7 +56,7 @@ namespace GameAI.GamePlaying
 		{
 			try
 			{
-				return this.document.DocumentElement.SelectSingleNode(section + "/" + name).InnerText;
+				return this.document.DocumentElement.SelectSingleNode(section + "/" + name)?.InnerText;
 			}
 			catch (Exception ex)
 			{
